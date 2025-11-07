@@ -84,10 +84,11 @@ agents-e2e/
 ## Milestones
 
 - [x] Project setup
-- [ ] Milestone 1: RAG answers from corpus (no tools)
-- [ ] Milestone 2: Tool use works
-- [ ] Milestone 3: Reliability & guardrails
-- [ ] Milestone 4: Observability & cost
+- [x] Milestone 1: RAG answers from corpus (no tools)
+- [x] Milestone 2: Tool use works
+- [x] Milestone 3: Reliability & guardrails
+- [ ] Milestone 4: Evaluation Suite
+- [ ] Milestone 5: Observability & cost
 
 ## Testing
 
