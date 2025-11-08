@@ -43,7 +43,7 @@ def test_safe_calculate_result_out_of_range():
 # Slack integration tests
 
 
-def test_list_channels():
+def test_list_slack_channels():
     """Test listing Slack channels."""
     channels = list_channels()
     assert isinstance(channels, list), "Should return a list of channels"

@@ -1,11 +1,12 @@
 """Tests for RAG functionality."""
 import pytest
 from src.graph.state import build_initial_state
+from src.graph.build_graph import build_graph
 
 
 def test_rag_node_graph_execution():
     """Test that rag_node graph execution works."""
-    from src.graph.build_graph import build_graph
+
     graph = build_graph()
     initial_state = build_initial_state(
         "What is the relocation allowance amount?")
@@ -21,7 +22,7 @@ def test_rag_node_graph_execution():
 
 def test_calendar_tool_node_graph_execution():
     """Test that calendar tool is correctly invoked."""
-    from src.graph.build_graph import build_graph
+
     from src.tools.calendar_mock import clear_events
     # Clear calendar before test
     clear_events()
@@ -41,7 +42,6 @@ def test_calendar_tool_node_graph_execution():
 
 def test_multihop_calendar_and_rag():
     """Integration: ReAct agent should use calendar tool and rag tool in one run."""
-    from src.graph.build_graph import build_graph
     from src.tools.calendar_mock import clear_events, create_event
 
     # Arrange calendar
@@ -65,7 +65,6 @@ def test_multihop_calendar_and_rag():
 
 def test_calendar_list_events_node_graph_execution():
     """Test that calendar tool can list today's events."""
-    from src.graph.build_graph import build_graph
     from src.tools.calendar_mock import clear_events, create_event
 
     # Clear and add an event before test
@@ -89,8 +88,6 @@ def test_calendar_list_events_node_graph_execution():
 
 def test_guard_refuses_legal_query():
     """Test that legal queries are refused by router guard."""
-    from src.graph.build_graph import build_graph
-
     graph = build_graph()
     initial_state = build_initial_state(
         "Can I sue my employer for discrimination?"
@@ -109,8 +106,6 @@ def test_guard_refuses_legal_query():
 
 def test_guard_refuses_medical_query():
     """Test that medical queries are refused by router guard."""
-    from src.graph.build_graph import build_graph
-
     graph = build_graph()
     initial_state = build_initial_state(
         "What medicine should I take for my headache?"
@@ -127,8 +122,6 @@ def test_guard_refuses_medical_query():
 
 def test_guard_refuses_document_generation():
     """Test that document generation queries are refused."""
-    from src.graph.build_graph import build_graph
-
     graph = build_graph()
     initial_state = build_initial_state(
         "Generate a letter claiming I'm exempt from lease penalties"
@@ -144,8 +137,6 @@ def test_guard_refuses_document_generation():
 
 def test_guard_grounding_check_in_rag_node():
     """Test that grounding check works when RAG node has no chunks."""
-    from src.graph.build_graph import build_graph
-
     graph = build_graph()
     # Query that looks factual but won't match anything in corpus
     initial_state = build_initial_state(
@@ -163,8 +154,6 @@ def test_guard_grounding_check_in_rag_node():
 
 def test_guard_with_pii_in_query():
     """Test that queries with PII are processed (PII masked but query proceeds)."""
-    from src.graph.build_graph import build_graph
-
     graph = build_graph()
     # Query with PII that should be masked internally but query should proceed
     initial_state = build_initial_state(
@@ -178,6 +167,55 @@ def test_guard_with_pii_in_query():
     # if "@" in result["final_answer"]:
     #     # If email appears, it should be masked
     #     assert "[REDACTED_EMAIL]" in result["final_answer"]
+
+# Slack Tests
+
+
+def test_create_slack_message():
+    from src.tools.slack import get_messages
+    graph = build_graph()
+    test_message = "Hello World!"
+
+    initial_state = build_initial_state(
+        f"Create a slack message with the content '{test_message}'")
+    result = graph.invoke(initial_state)
+
+    assert "final_answer" in result
+
+    # Read messages from channel
+    channel = 'new-channel'
+    messages = get_messages(channel, limit=5)
+    assert len(messages) > 0, "Should retrieve at least one message"
+
+    # Find our test message
+    found = False
+    for msg in messages:
+        if msg.get("text") == test_message:
+            found = True
+            break
+
+    assert found, f"Test message '{test_message}' should be found in channel"
+
+
+def test_multihop_slack_and_rag():
+    """Integration: ReAct agent should use RAG tool and Slack tool in one run."""
+    graph = build_graph()
+    query = (
+        "Find information about relocation policy from documents and send a summary to Slack channel new-channel"
+    )
+    initial_state = build_initial_state(query)
+    result = graph.invoke(initial_state)
+
+    assert "final_answer" in result and result["final_answer"]
+
+    tool_calls = result.get("tool_calls", [])
+    tool_names = [c["name"] for c in tool_calls]
+
+    has_rag = any(n in tool_names for n in ["rag_search", "rag"])
+    has_slack = any(n in tool_names for n in ["send_slack_message"])
+
+    assert has_rag, f"Expected rag_search or rag in {tool_names}"
+    assert has_slack, f"Expected send_slack_message in {tool_names}"
 
 
 if __name__ == "__main__":

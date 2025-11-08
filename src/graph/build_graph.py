@@ -2,8 +2,8 @@
 from langgraph.graph import StateGraph, END, START
 from src.graph.state import State
 from src.graph.nodes import (
-    rag_node, finalize_node, router, tool_node,
-    initialize_node, guard_node, guard_router
+    finalize_node, tool_node,
+    initialize_node, guard_node
 )
 
 
@@ -11,7 +11,6 @@ def build_graph():
     """Build and return the compiled agent graph."""
     graph = StateGraph(State)
 
-    graph.add_node("rag", rag_node)
     graph.add_node("finalize", finalize_node)
     graph.add_node("tool", tool_node)
     graph.add_node("initialize", initialize_node)
@@ -19,9 +18,8 @@ def build_graph():
 
     graph.add_edge(START, "initialize")
     graph.add_edge("initialize", "guard")
-    graph.add_conditional_edges("guard", guard_router)
-    graph.add_conditional_edges("rag", router)
-    graph.add_conditional_edges("tool", router)
+    graph.add_edge("guard", "tool")
+    graph.add_edge("tool", "finalize")
     graph.add_edge("finalize", END)
 
     return graph.compile()

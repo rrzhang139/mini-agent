@@ -36,6 +36,9 @@ def send_message(text: str, channel: str = None):
     Args:
         text: Message text to send
         channel: Channel name (with or without #) or channel ID. Defaults to SLACK_DEFAULT_CHANNEL.
+
+    Returns:
+        str: Success message confirming the message was sent, or error message
     """
     try:
         channel_id = _resolve_channel_id(channel or SLACK_DEFAULT_CHANNEL)
@@ -43,10 +46,12 @@ def send_message(text: str, channel: str = None):
             channel=channel_id,
             text=text
         )
-        return response["ts"]
+        channel_display = channel or SLACK_DEFAULT_CHANNEL
+        return f"Successfully sent message to {channel_display}. Message timestamp: {response['ts']}"
     except (SlackApiError, ValueError) as e:
+        error_msg = f"Failed to send message: {str(e)}"
         print(f"Slack API Error: {e}")
-        return None
+        return error_msg
 
 
 def list_channels(types: str = "public_channel,private_channel"):
